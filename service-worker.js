@@ -1,7 +1,6 @@
 chrome.action.onClicked.addListener((tab) => {
   if (tab.url.startsWith("http")) {
     // attach debugger to target
-    // attatch = (target, requriedVersion, callback)
     chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
       chrome.debugger.sendCommand(
         { tabId: tab.id },
@@ -16,22 +15,56 @@ chrome.action.onClicked.addListener((tab) => {
   }
 });
 
-chrome.debugger.onEvent.addListener((source, method, params) => {
-  if (method === "Network.responseReceived") {
-    console.log("Response Received:", params.response);
+// TODO: to util
+const getDomainName = (url) => {
+  return url.replace(/https?:\/\/([^\s\/:]+)(\S*$)/i, "$1");
+};
 
-    chrome.debugger.sendCommand(
-      // target
-      { tabId: source.tabId },
-      // method
-      "Network.getResponseBody",
-      // request params
-      { requestId: params.requestId },
-      // response body
-      (response) => {
-        console.log("Response Body:", JSON.parse(response.body));
-        // chrome.debugger.detach(source);
-      },
-    );
+chrome.debugger.onEvent.addListener(async (source, method, params) => {
+  if (method === "Network.responseReceived") {
+    let result = {};
+
+    const targetUrl = await chrome.debugger
+      .getTargets()
+      .then(
+        (targets) =>
+          targets.find((target) => target?.tabId === source?.tabId)?.url,
+      )
+      .catch(() => console.error("Failed to get a URL of Debugger Target"));
+
+    const { url, status, headers, mimeType } = params.response;
+
+    if (getDomainName(targetUrl).includes(getDomainName(url))) {
+      // ignore a request to same origin
+      return;
+    }
+
+    result = { url, status, headers };
+
+    try {
+      chrome.debugger.sendCommand(
+        { tabId: source.tabId },
+        "Network.getResponseBody",
+        { requestId: params.requestId },
+        (response) => {
+          if (response) {
+            result = {
+              ...result,
+              body:
+                response?.body && mimeType === "application/json"
+                  ? JSON.parse(response.body)
+                  : response?.body,
+            };
+
+            console.log("Result:", result);
+            // chrome.debugger.detach(source);
+          } else {
+            throw Error("Empty Response");
+          }
+        },
+      );
+    } catch (e) {
+      console.log(error);
+    }
   }
 });
