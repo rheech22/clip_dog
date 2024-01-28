@@ -1,15 +1,14 @@
-chrome.action.onClicked.addListener(function (tab) {
+chrome.action.onClicked.addListener((tab) => {
   if (tab.url.startsWith("http")) {
-    chrome.debugger.attach({ tabId: tab.id }, "1.3", function () {
+    // attach debugger to target
+    // attatch = (target, requriedVersion, callback)
+    chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
       chrome.debugger.sendCommand(
         { tabId: tab.id },
         "Network.enable",
         {},
-        function () {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
-          }
-        },
+        () =>
+          chrome.runtime.lastError && console.error(chrome.runtime.lastError),
       );
     });
   } else {
@@ -17,21 +16,19 @@ chrome.action.onClicked.addListener(function (tab) {
   }
 });
 
-chrome.debugger.onEvent.addListener(function (source, method, params) {
-  if (
-    method === "Network.responseReceived" &&
-    params.response.url.endsWith("/graphql/")
-  ) {
-    console.log("Graphql Response Received:", params.response);
+chrome.debugger.onEvent.addListener((source, method, params) => {
+  if (method === "Network.responseReceived") {
+    console.log("Response Received:", params.response);
+
     chrome.debugger.sendCommand(
-      {
-        tabId: source.tabId,
-      },
+      // target
+      { tabId: source.tabId },
+      // method
       "Network.getResponseBody",
-      {
-        requestId: params.requestId,
-      },
-      function (response) {
+      // request params
+      { requestId: params.requestId },
+      // response body
+      (response) => {
         console.log("Response Body:", JSON.parse(response.body));
         // chrome.debugger.detach(source);
       },
