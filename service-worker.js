@@ -1,26 +1,56 @@
-chrome.action.onClicked.addListener((tab) => {
-  if (tab.url.startsWith("http")) {
-    // attach debugger to target
-    chrome.debugger.attach({ tabId: tab.id }, "1.3", () => {
-      chrome.debugger.sendCommand(
-        { tabId: tab.id },
-        "Network.enable",
-        {},
-        () =>
-          chrome.runtime.lastError && console.error(chrome.runtime.lastError),
-      );
-    });
-  } else {
-    console.log("Debugger can only be attached to HTTP/HTTPS pages.");
-  }
+const attachDebugger = (tabId) => {
+  chrome.debugger.attach({ tabId }, "1.3", () => {
+    chrome.debugger.sendCommand(
+      { tabId },
+      "Network.enable",
+      {},
+      () => chrome.runtime.lastError && console.error(chrome.runtime.lastError),
+    );
+  });
+};
+
+const detachDebugger = (tabId) => {
+  chrome.debugger.detach({ tabId });
+};
+
+const methods = ["START", "END"];
+
+chrome.runtime.onConnect.addListener((port) => {
+  port.onMessage.addListener((msg) => {
+    const { tab, method } = msg;
+
+    if (!tab) {
+      console.log("Tab Not Found");
+      return;
+    }
+
+    if (!methods.includes(method)) {
+      console.log("Invalid Method");
+      return;
+    }
+
+    if (method === "END") {
+      detachDebugger(tab.id);
+      return;
+    }
+
+    if (tab.url.startsWith("http")) {
+      attachDebugger(tab.id);
+    } else {
+      console.log("Debugger can only be attached to HTTP/HTTPS pages.");
+    }
+  });
 });
 
-// TODO: to util
 const getDomainName = (url) => {
   return url.replace(/https?:\/\/([^\s\/:]+)(\S*$)/i, "$1");
 };
 
 chrome.debugger.onEvent.addListener(async (source, method, params) => {
+  if (method === "Network.requestWillBeSent") {
+    console.log(source, method, params);
+  }
+
   if (method === "Network.responseReceived") {
     let result = {};
 
@@ -46,7 +76,7 @@ chrome.debugger.onEvent.addListener(async (source, method, params) => {
         { tabId: source.tabId },
         "Network.getResponseBody",
         { requestId: params.requestId },
-        (response) => {
+        async (response) => {
           if (response) {
             result = {
               ...result,
@@ -57,7 +87,11 @@ chrome.debugger.onEvent.addListener(async (source, method, params) => {
             };
 
             console.log("Result:", result);
-            // chrome.debugger.detach(source);
+
+            const res = await chrome.tabs.sendMessage(source.tabId, {
+              greeting: "hello",
+            });
+            console.log("Content's Response:", res);
           } else {
             throw Error("Empty Response");
           }
