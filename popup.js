@@ -10,6 +10,19 @@ const port = chrome.runtime.connect({ name: "Netracer" });
 
 port.onMessage.addListener((msg) => {
   console.log(msg);
+  chrome.storage.local.get(["key"]).then((result) => {
+    const jsonString = JSON.stringify(result.key);
+
+    const blob = new Blob([jsonString], { type: "application/json" });
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href = URL.createObjectURL(blob);
+
+    downloadLink.download = "myObject.json";
+    downloadLink.innerHTML = "download";
+
+    document.body.appendChild(downloadLink);
+  });
 });
 
 const startButton = document.getElementById("start");

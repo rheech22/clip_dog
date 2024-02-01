@@ -3,7 +3,7 @@
   "name": "Netracer",
   "description": "Uses the chrome.debugger API to capture network events on web pages.",
   "version": "1.0",
-  "permissions": ["debugger", "tabs"],
+  "permissions": ["debugger", "tabs", "storage", "unlimitedStorage"],
   "background": {
     "service_worker": "service-worker.js"
   },
