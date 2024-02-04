@@ -5,9 +5,9 @@
   "version": "1.0",
   "permissions": ["debugger", "tabs", "storage", "unlimitedStorage"],
   "background": {
-    "service_worker": "service-worker.js"
+    "service_worker": "src/service_worker.ts"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "index.html"
   }
 }

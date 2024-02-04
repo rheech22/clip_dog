@@ -1,27 +1,10 @@
-const attachDebugger = (tabId) => {
-  chrome.debugger.attach({ tabId }, "1.3", () => {
-    chrome.debugger.sendCommand(
-      { tabId },
-      "Network.enable",
-      {},
-      () => chrome.runtime.lastError && console.error(chrome.runtime.lastError),
-    );
-  });
-  console.log("Debugger attached");
-};
-
-const detachDebugger = (tabId) => {
-  chrome.debugger.detach({ tabId });
-  console.log("Debugger detached");
-};
+import { attachDebugger, detachDebugger } from "./ex";
+import { Log, Params, Response } from "./ex/types";
+import { getDomainFromURL } from "./utils";
 
 const methods = ["START", "END"];
 
-const getDomainName = (url) => {
-  return url.replace(/https?:\/\/([^\s\/:]+)(\S*$)/i, "$1");
-};
-
-let log = {};
+const log: Log = {};
 
 chrome.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener((msg) => {
@@ -49,7 +32,9 @@ chrome.runtime.onConnect.addListener((port) => {
     }
   });
 
-  chrome.debugger.onEvent.addListener(async (source, method, params) => {
+  chrome.debugger.onEvent.addListener(async (source, method, _params) => {
+    const params = _params as Params;
+
     if (method === "Network.requestWillBeSent") {
       const { request, requestId } = params;
 
@@ -69,14 +54,14 @@ chrome.runtime.onConnect.addListener((port) => {
         )
         .catch(() => console.error("Failed to get a URL of Debugger Target"));
 
-      const { url, status, headers, mimeType } = params.response;
+      const { url, mimeType } = params.response;
 
-      if (getDomainName(targetUrl).includes(getDomainName(url))) {
-        // ignore a request to same origin
+      if (
+        targetUrl &&
+        getDomainFromURL(targetUrl).includes(getDomainFromURL(url))
+      ) {
         return;
       }
-
-      console.log(log, params.requestId);
 
       log[params.requestId]["response"] = params.response;
 
@@ -85,7 +70,9 @@ chrome.runtime.onConnect.addListener((port) => {
           { tabId: source.tabId },
           "Network.getResponseBody",
           { requestId: params.requestId },
-          async (response) => {
+          async (_response) => {
+            const response = _response as Response;
+
             if (response) {
               log[params.requestId].response = {
                 ...log[params.requestId].response,
@@ -105,7 +92,7 @@ chrome.runtime.onConnect.addListener((port) => {
           },
         );
       } catch (e) {
-        console.log(error);
+        console.log(e);
       }
     }
   });
