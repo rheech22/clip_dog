@@ -1,25 +1,14 @@
 import Button from "../components/Button";
-import { createPort, getCurrentTab } from "../ex";
+import useDebugger from "../hooks/useDebugger";
 
 const Controls = () => {
-  const port = createPort("Netracer");
-
-  const handleClickStart = async () => {
-    const tab = await getCurrentTab();
-
-    port.postMessage({ tab, method: "START" });
-  };
-
-  const handleClickEnd = async () => {
-    const tab = await getCurrentTab();
-
-    port.postMessage({ tab, method: "END" });
-  };
+  const { isDebugging, start, stop } = useDebugger();
 
   return (
-    <div>
-      <Button onClick={handleClickStart}>start</Button>
-      <Button onClick={handleClickEnd}>end</Button>
+    <div className="flex gap-3 justify-center">
+      <Button onClick={isDebugging ? stop : start}>
+        {isDebugging ? "STOP" : "START"}
+      </Button>
     </div>
   );
 };
