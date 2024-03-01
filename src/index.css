@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body > div {
+  width: 650px; /* max: 1000px */
+  height: 300px; /* max: 750px */
+}
