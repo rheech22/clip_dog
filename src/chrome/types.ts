@@ -21,3 +21,9 @@ export type Params = {
 };
 
 export type Response = { body?: string } | undefined;
+
+export type MessageListener<M, R> = (
+  message: M,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: R) => void,
+) => void;

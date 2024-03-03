@@ -1,12 +1,15 @@
-import { attachDebugger, detachDebugger } from "./ex";
-import { Log, Params, Response } from "./ex/types";
+import type { Log, Params, Response } from "./chrome/types";
+import {
+  addDebuggerListener,
+  addMessageListener,
+  attachDebugger,
+  detachDebugger,
+} from "./chrome";
+
 import { getDomainFromURL } from "./utils";
+import { Method } from "./constants";
 
-const methods = ["START", "END", "IS_DEBUGGEE"];
-
-const log: Log = {};
-
-chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
+addMessageListener((message, _, sendMessage) => {
   const { tab, method } = message;
 
   if (!tab) {
@@ -19,7 +22,17 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
     return;
   }
 
-  if (!methods.includes(method)) {
+  if (!tab.url.startsWith("http")) {
+    sendMessage({
+      request_method: method,
+      description: "Debugger can only be attached to HTTP/HTTPS pages.",
+      error: true,
+      ok: false,
+    });
+    return;
+  }
+
+  if (!Object.values(Method).includes(method)) {
     sendMessage({
       request_method: method,
       description: "invalid method",
@@ -29,7 +42,7 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
     return;
   }
 
-  if (method === "IS_DEBUGGEE") {
+  if (method === Method.IsDebuggee) {
     chrome.debugger.getTargets((targets) => {
       const isDebuggee = targets.some(
         ({ tabId, attached }) => tabId === tab.id && attached === true,
@@ -47,8 +60,9 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
     return true;
   }
 
-  if (method === "END") {
+  if (method === Method.End) {
     detachDebugger(tab.id);
+
     sendMessage({
       request_method: method,
       description: "detached",
@@ -58,7 +72,7 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
     return;
   }
 
-  if (tab.url.startsWith("http")) {
+  if (method === Method.Start) {
     chrome.debugger.getTargets((targets) => {
       const isDebuggee = targets.some(
         ({ tabId, attached }) => tabId === tab.id && attached === true,
@@ -67,7 +81,7 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
       if (isDebuggee) {
         sendMessage({
           request_method: method,
-          description: "already attached",
+          description: "this tab is already attached",
           error: true,
           ok: false,
         });
@@ -85,17 +99,12 @@ chrome.runtime.onMessage.addListener((message, _, sendMessage) => {
     });
 
     return true;
-  } else {
-    sendMessage({
-      request_method: method,
-      description: "Debugger can only be attached to HTTP/HTTPS pages.",
-      error: true,
-      ok: false,
-    });
   }
 });
 
-chrome.debugger.onEvent.addListener(async (source, method, _params) => {
+const log: Log = {};
+
+addDebuggerListener(async (source, method, _params) => {
   const params = _params as Params;
 
   if (method === "Network.requestWillBeSent") {
@@ -103,7 +112,7 @@ chrome.debugger.onEvent.addListener(async (source, method, _params) => {
 
     log[requestId] = { request };
 
-    console.log(log[requestId]);
+    console.log("Network.requestWillBeSent", log[requestId]);
   }
 
   if (method === "Network.responseReceived") {

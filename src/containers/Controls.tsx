@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
-import { getCurrentTab } from "../ex";
+import { getCurrentTab, sendMessage } from "../chrome";
+import { Method, Mode } from "../constants";
 
-enum Mode {
-  Idle = "Idle",
-  Recording = "Recording",
-}
-
-const modeToMethod: Record<Mode, "START" | "END"> = {
-  [Mode.Idle]: "END",
-  [Mode.Recording]: "START",
+const modeToMethod: Record<Mode, Method> = {
+  [Mode.Idle]: Method.End,
+  [Mode.Recording]: Method.Start,
 };
 
 const modeToString: Record<Mode, string> = {
@@ -23,17 +19,17 @@ const Controls = () => {
   const handleClick = (to: Mode) => async () => {
     const tab = await getCurrentTab();
 
-    const result = await chrome.runtime.sendMessage({
+    const response = await sendMessage({
       tab,
       method: modeToMethod[to],
     });
 
-    if (result.ok) {
+    if (response.ok) {
       setMode(to);
     }
 
-    if (result.error) {
-      console.error(result.description);
+    if (response.error) {
+      console.error(response.description);
     }
   };
 
@@ -41,9 +37,9 @@ const Controls = () => {
     (async () => {
       const tab = await getCurrentTab();
 
-      const response = await chrome.runtime.sendMessage({
+      const response = await sendMessage({
         tab,
-        method: "IS_DEBUGGEE",
+        method: Method.IsDebuggee,
       });
 
       if (response.ok) {
