@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
-import {
-  createPort,
-  getCurrentTab,
-  getSessionItem,
-  setSessionItem,
-} from "../ex";
+import { getCurrentTab } from "../ex";
 
 enum Mode {
   Idle = "Idle",
@@ -13,8 +8,8 @@ enum Mode {
 }
 
 const modeToMethod: Record<Mode, "START" | "END"> = {
-  [Mode.Idle]: "START",
-  [Mode.Recording]: "END",
+  [Mode.Idle]: "END",
+  [Mode.Recording]: "START",
 };
 
 const modeToString: Record<Mode, string> = {
@@ -24,23 +19,42 @@ const modeToString: Record<Mode, string> = {
 
 const Controls = () => {
   const [mode, setMode] = useState<Mode>(Mode.Idle);
-  const port = createPort("Netracer");
 
-  const handleClick = (mode: Mode) => async () => {
-    setMode(mode);
-
-    await setSessionItem("mode", mode);
-
+  const handleClick = (to: Mode) => async () => {
     const tab = await getCurrentTab();
 
-    port.postMessage({ tab, method: modeToMethod[mode] });
+    const result = await chrome.runtime.sendMessage({
+      tab,
+      method: modeToMethod[to],
+    });
+
+    if (result.ok) {
+      setMode(to);
+    }
+
+    if (result.error) {
+      console.error(result.description);
+    }
   };
 
   useEffect(() => {
     (async () => {
-      const mode = await getSessionItem("mode");
+      const tab = await getCurrentTab();
 
-      mode && setMode(mode);
+      const response = await chrome.runtime.sendMessage({
+        tab,
+        method: "IS_DEBUGGEE",
+      });
+
+      if (response.ok) {
+        const mode = response?.result ? Mode.Recording : Mode.Idle;
+
+        setMode(mode);
+      }
+
+      if (response.error) {
+        console.error(response.description);
+      }
     })();
   }, []);
 
