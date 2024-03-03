@@ -1611,6 +1611,13 @@ hasown@^2.0.0:
   dependencies:
     function-bind "^1.1.2"
 
+hot-reload-extension-vite@^1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/hot-reload-extension-vite/-/hot-reload-extension-vite-1.0.13.tgz#e52e832a24c8093bb3c72455a12576958307f38c"
+  integrity sha512-bX9Bcvhay+xwVinLb/NdoA85NDAixbZ4xcmOyibvHjDjIzw1qllEGfN4LnoAi1jSfH0Mv5Sf5WrbplJS6IaMmg==
+  dependencies:
+    ws "^8.14.2"
+
 htmlparser2@^8.0.1:
   version "8.0.2"
   resolved "https://registry.yarnpkg.com/htmlparser2/-/htmlparser2-8.0.2.tgz#f002151705b383e62433b5cf466f5b716edaec21"
@@ -2533,6 +2540,11 @@ wrappy@1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
   integrity sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==
+
+ws@^8.14.2:
+  version "8.16.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-8.16.0.tgz#d1cd774f36fbc07165066a60e40323eab6446fd4"
+  integrity sha512-HS0c//TP7Ina87TfiPUz1rQzMhHrl/SG2guqRcTOIUYD2q8uhUdNHZYJUaQ8aTGPzCh+c6oawMKW35nFl1dxyQ==
 
 yallist@^3.0.2:
   version "3.1.1"

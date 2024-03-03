@@ -1,25 +1,46 @@
+import { useEffect, useState } from "react";
 import Button from "../components/Button";
 import { createPort, getCurrentTab } from "../ex";
 
+enum Mode {
+  Idle = "Idle",
+  Recording = "Recording",
+}
+
+const modeToMethod: Record<Mode, "START" | "END"> = {
+  [Mode.Idle]: "START",
+  [Mode.Recording]: "END",
+};
+
 const Controls = () => {
+  const [mode, setMode] = useState<Mode>(Mode.Idle);
   const port = createPort("Netracer");
 
-  const handleClickStart = async () => {
+  const handleClick = async (mode: Mode) => {
+    setMode(mode);
+
+    await chrome.storage.session.set({ mode });
+
     const tab = await getCurrentTab();
 
-    port.postMessage({ tab, method: "START" });
+    port.postMessage({ tab, method: modeToMethod[mode] });
   };
 
-  const handleClickEnd = async () => {
-    const tab = await getCurrentTab();
-
-    port.postMessage({ tab, method: "END" });
-  };
+  useEffect(() => {
+    chrome.storage.session.get(["mode"]).then((result) => {
+      setMode(result.mode ?? Mode.Idle);
+    });
+  }, []);
 
   return (
     <div>
-      <Button onClick={handleClickStart}>start</Button>
-      <Button onClick={handleClickEnd}>end</Button>
+      <Button
+        onClick={() =>
+          handleClick(mode === Mode.Idle ? Mode.Recording : Mode.Idle)
+        }
+      >
+        {mode === Mode.Idle ? "로그 수집 시작" : "수집 종료"}
+      </Button>
     </div>
   );
 };

@@ -10,6 +10,8 @@ chrome.runtime.onConnect.addListener((port) => {
   port.onMessage.addListener((msg) => {
     const { tab, method } = msg;
 
+    console.log("get message from popup", tab, method);
+
     if (!tab) {
       console.log("Tab Not Found");
       return;
@@ -39,10 +41,6 @@ chrome.runtime.onConnect.addListener((port) => {
       const { request, requestId } = params;
 
       log[requestId] = { request };
-
-      console.log(log);
-
-      console.log(source, method, params);
     }
 
     if (method === "Network.responseReceived") {
@@ -81,9 +79,10 @@ chrome.runtime.onConnect.addListener((port) => {
                     ? JSON.parse(response.body)
                     : response?.body,
               };
-              chrome.storage.local.set({ key: log }).then(() => {
-                console.log("Value is set", log);
-              });
+
+              //               chrome.storage.local.set({ key: log }).then(() => {
+              //                 console.log("Value is set", log);
+              //               });
 
               port.postMessage("ready to download");
             } else {
