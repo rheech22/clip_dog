@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import Button from "../components/Button";
-import { createPort, getCurrentTab } from "../ex";
+import {
+  createPort,
+  getCurrentTab,
+  getSessionItem,
+  setSessionItem,
+} from "../ex";
 
 enum Mode {
   Idle = "Idle",
@@ -12,14 +17,19 @@ const modeToMethod: Record<Mode, "START" | "END"> = {
   [Mode.Recording]: "END",
 };
 
+const modeToString: Record<Mode, string> = {
+  [Mode.Idle]: "로그 수집 시작",
+  [Mode.Recording]: "로그 수집 종료",
+};
+
 const Controls = () => {
   const [mode, setMode] = useState<Mode>(Mode.Idle);
   const port = createPort("Netracer");
 
-  const handleClick = async (mode: Mode) => {
+  const handleClick = (mode: Mode) => async () => {
     setMode(mode);
 
-    await chrome.storage.session.set({ mode });
+    await setSessionItem("mode", mode);
 
     const tab = await getCurrentTab();
 
@@ -27,19 +37,19 @@ const Controls = () => {
   };
 
   useEffect(() => {
-    chrome.storage.session.get(["mode"]).then((result) => {
-      setMode(result.mode ?? Mode.Idle);
-    });
+    (async () => {
+      const mode = await getSessionItem("mode");
+
+      mode && setMode(mode);
+    })();
   }, []);
 
   return (
     <div>
       <Button
-        onClick={() =>
-          handleClick(mode === Mode.Idle ? Mode.Recording : Mode.Idle)
-        }
+        onClick={handleClick(mode === Mode.Idle ? Mode.Recording : Mode.Idle)}
       >
-        {mode === Mode.Idle ? "로그 수집 시작" : "수집 종료"}
+        {modeToString[mode]}
       </Button>
     </div>
   );

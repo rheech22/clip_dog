@@ -41,6 +41,8 @@ chrome.runtime.onConnect.addListener((port) => {
       const { request, requestId } = params;
 
       log[requestId] = { request };
+
+      console.log(log[requestId]);
     }
 
     if (method === "Network.responseReceived") {
